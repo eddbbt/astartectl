@@ -312,6 +312,7 @@ func getTriggerDefinition(realm, triggerName string) (map[string]interface{}, er
 	triggerDefinition, _ := rawTRigger.(map[string]interface{})
 	return triggerDefinition, nil
 }
+
 func triggersSyncF(command *cobra.Command, args []string) error {
 
 	if viper.GetBool("to-curl") {
