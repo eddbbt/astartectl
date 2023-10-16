@@ -83,6 +83,17 @@ This command does not support the --to-curl flag.`,
 	RunE:    triggersSaveF,
 }
 
+var triggersSyncCmd = &cobra.Command{
+	Use:   "sync <interface_files> [...]",
+	Short: "Synchronize triggers",
+	Long: `Synchronize triggers in the realm with the given files.
+All given files will be parsed, and triggers will be either updated or installed in the
+realm, depending on the realm's state.`,
+	Example: `  astartectl realm-management triggers sync triggers/*.json`,
+	Args:    cobra.MinimumNArgs(1),
+	RunE:    triggersSyncF,
+}
+
 func init() {
 	RealmManagementCmd.AddCommand(triggersCmd)
 
@@ -299,4 +310,118 @@ func getTriggerDefinition(realm, triggerName string) (map[string]interface{}, er
 	}
 	triggerDefinition, _ := rawTRigger.(map[string]interface{})
 	return triggerDefinition, nil
+}
+func triggersSyncF(command *cobra.Command, args []string) error {
+
+	if viper.GetBool("to-curl") {
+		fmt.Println(`'triggers sync' does not support the --to-curl option. Install or update your triggers one by one with 'triggers install' or 'interface update'.`)
+		os.Exit(1)
+	}
+
+	triggerToInstall := []map[string]interface{}{}
+	triggerToUpdate := []map[string]interface{}{}
+
+	for _, f := range args {
+		triggerFile, err := os.ReadFile(f)
+		if err != nil {
+			return err
+		}
+
+		var astarteTrigger map[string]interface{}
+		if err = json.Unmarshal(triggerFile, &astarteTrigger); err != nil {
+			return err
+		}
+
+		if _, err := getTriggerDefinition(realm, astarteTrigger["Name"].(string)); err != nil {
+			// The interface does not exist
+			triggerToInstall = append(triggerToInstall, astarteTrigger)
+		} else {
+			triggerToUpdate = append(triggerToUpdate, astarteTrigger)
+		}
+
+		if len(triggerToInstall) == 0 && len(triggerToUpdate) == 0 {
+			// All good in the hood
+			fmt.Println("Your realm is in sync with the provided triggers files")
+			return nil
+		}
+
+		// Notify the user about what we're about to do
+		fmt.Println("The following actions will be taken:")
+		fmt.Println()
+		for _, v := range triggerToInstall {
+			fmt.Printf("Will install trigger %s \n", v["Name"])
+		}
+		for _, v := range triggerToUpdate {
+			fmt.Printf("Will update trigger %s \n", v["Name"])
+		}
+		fmt.Println()
+
+		y, err := command.Flags().GetBool("non-interactive")
+		if err != nil {
+			return err
+		}
+		if !y {
+			if ok, err := utils.AskForConfirmation("Do you want to continue?"); !ok || err != nil {
+				return nil
+			}
+		}
+
+		// Start syncing.
+		for _, v := range triggerToInstall {
+			if err := installTrigger(realm, v); err != nil {
+				fmt.Fprintf(os.Stderr, "Could not install trigger %s: %s\n", v["Name"], err)
+			} else {
+				fmt.Printf("trigger %s installed successfully\n", v["Name"])
+			}
+		}
+		for _, v := range triggerToUpdate {
+			if err := updateTrigger(realm, v["Name"], v["MajorVersion"], v); err != nil {
+				fmt.Fprintf(os.Stderr, "Could not update trigger %s: %s\n", v.Name, err)
+			} else {
+				fmt.Printf("trigger %s updated successfully\n", v.Name)
+			}
+		}
+
+	}
+	return nil
+}
+
+func installTrigger(realm string, trigger map[string]interface{}) error {
+	installTriggerCall, err := astarteAPIClient.InstallTrigger(realm, trigger)
+	if err != nil {
+		return err
+	}
+
+	// When we're here in the context of `interfaces sync`, the to-curl flag
+	// is always false (`interfaces sync` has no `--to-curl` flag)
+	// and thus the call will never exit unexpectedly
+	utils.MaybeCurlAndExit(installTriggerCall, astarteAPIClient)
+
+	installTriggerRes, err := installTriggerCall.Run(astarteAPIClient)
+	if err != nil {
+		return err
+	}
+
+	_, _ = installTriggerRes.Parse()
+	return nil
+}
+
+func updateTrigger(realm string, triggername string, newtrig map[string]interface{}) error {
+	updateTriggerCall, err := astarteAPIClient.UpdateTrigger(realm, triggername, newtrig, true)
+	if err != nil {
+		return err
+	}
+
+	// When we're here in the context of `interfaces sync`, the to-curl flag
+	// is always false (`interfaces sync` has no `--to-curl` flag)
+	// and thus the call will never exit unexpectedly
+	utils.MaybeCurlAndExit(updateTriggerCall, astarteAPIClient)
+
+	updateTriggerRes, err := updateTriggerCall.Run(astarteAPIClient)
+	if err != nil {
+		return err
+	}
+
+	_, _ = updateTriggerRes.Parse()
+	return nil
 }
