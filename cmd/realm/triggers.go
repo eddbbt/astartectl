@@ -103,6 +103,7 @@ func init() {
 		triggersInstallCmd,
 		triggersDeleteCmd,
 		triggersSaveCmd,
+		triggersSyncCmd,
 	)
 }
 
@@ -332,7 +333,7 @@ func triggersSyncF(command *cobra.Command, args []string) error {
 			return err
 		}
 
-		if _, err := getTriggerDefinition(realm, astarteTrigger["Name"].(string)); err != nil {
+		if _, err := getTriggerDefinition(realm, astarteTrigger["name"].(string)); err != nil {
 			// The interface does not exist
 			triggerToInstall = append(triggerToInstall, astarteTrigger)
 		} else {
@@ -349,36 +350,26 @@ func triggersSyncF(command *cobra.Command, args []string) error {
 		fmt.Println("The following actions will be taken:")
 		fmt.Println()
 		for _, v := range triggerToInstall {
-			fmt.Printf("Will install trigger %s \n", v["Name"])
+			fmt.Printf("Will install trigger %s \n", v["name"])
 		}
 		for _, v := range triggerToUpdate {
-			fmt.Printf("Will update trigger %s \n", v["Name"])
+			fmt.Printf("Will update trigger %s \n", v["name"])
 		}
 		fmt.Println()
-
-		y, err := command.Flags().GetBool("non-interactive")
-		if err != nil {
-			return err
-		}
-		if !y {
-			if ok, err := utils.AskForConfirmation("Do you want to continue?"); !ok || err != nil {
-				return nil
-			}
-		}
 
 		// Start syncing.
 		for _, v := range triggerToInstall {
 			if err := installTrigger(realm, v); err != nil {
-				fmt.Fprintf(os.Stderr, "Could not install trigger %s: %s\n", v["Name"], err)
+				fmt.Fprintf(os.Stderr, "Could not install trigger %s: %s\n", v["name"], err)
 			} else {
-				fmt.Printf("trigger %s installed successfully\n", v["Name"])
+				fmt.Printf("trigger %s installed successfully\n", v["name"])
 			}
 		}
 		for _, v := range triggerToUpdate {
-			if err := updateTrigger(realm, v["Name"], v["MajorVersion"], v); err != nil {
-				fmt.Fprintf(os.Stderr, "Could not update trigger %s: %s\n", v.Name, err)
+			if err := updateTrigger(realm, v["name"].(string), v); err != nil {
+				fmt.Fprintf(os.Stderr, "Could not update trigger %s: %s\n", v["name"], err)
 			} else {
-				fmt.Printf("trigger %s updated successfully\n", v.Name)
+				fmt.Printf("trigger %s updated successfully\n", v["name"])
 			}
 		}
 
@@ -407,7 +398,19 @@ func installTrigger(realm string, trigger map[string]interface{}) error {
 }
 
 func updateTrigger(realm string, triggername string, newtrig map[string]interface{}) error {
-	updateTriggerCall, err := astarteAPIClient.UpdateTrigger(realm, triggername, newtrig, true)
+
+	deleteTriggercall, err := astarteAPIClient.DeleteTrigger(realm, triggername)
+	if err != nil {
+		return err
+	}
+	utils.MaybeCurlAndExit(deleteTriggercall, astarteAPIClient)
+
+	_, err = deleteTriggercall.Run(astarteAPIClient)
+	if err != nil {
+		return err
+	}
+
+	updateTriggerCall, err := astarteAPIClient.InstallTrigger(realm, newtrig)
 	if err != nil {
 		return err
 	}
