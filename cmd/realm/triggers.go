@@ -231,18 +231,6 @@ func triggersSaveF(command *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 
-	//ifaceNameAndVersions := map[string][]int{}
-
-	// // and the versions for each interface
-	// for _, ifaceName := range realmTriggers {
-	// 	interfaceVersions, err := interfaceVersions(ifaceName)
-	// 	if err != nil {
-	// 		fmt.Fprintln(os.Stderr, err)
-	// 		os.Exit(1)
-	// 	}
-	// 	ifaceNameAndVersions[ifaceName] = ifaceName
-	// }
-
 	for _, name := range realmTriggers {
 
 		triggerDefinition, err := getTriggerDefinition(realm, name)
