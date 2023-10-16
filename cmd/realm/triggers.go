@@ -87,16 +87,17 @@ var triggersSyncCmd = &cobra.Command{
 	Use:   "sync <interface_files> [...]",
 	Short: "Synchronize triggers",
 	Long: `Synchronize triggers in the realm with the given files.
-All given files will be parsed, and triggers will be either updated or installed in the
-realm, depending on the realm's state.`,
+All given files will be parsed, and only new triggers will be installed in the
+realm, depending on the realm's state. In order to force triggers update, use --force flag`,
 	Example: `  astartectl realm-management triggers sync triggers/*.json`,
 	Args:    cobra.MinimumNArgs(1),
 	RunE:    triggersSyncF,
 }
 
 func init() {
-	RealmManagementCmd.AddCommand(triggersCmd)
 
+	RealmManagementCmd.AddCommand(triggersCmd)
+	triggersSyncCmd.Flags().Bool("force", false, "When set, force triggers update")
 	triggersCmd.AddCommand(
 		triggersListCmd,
 		triggersShowCmd,
@@ -348,33 +349,59 @@ func triggersSyncF(command *cobra.Command, args []string) error {
 		}
 
 		// Notify the user about what we're about to do
-		fmt.Println("The following actions will be taken:")
-		fmt.Println()
-		for _, v := range triggerToInstall {
-			fmt.Printf("Will install trigger %s \n", v["name"])
-		}
-		for _, v := range triggerToUpdate {
-			fmt.Printf("Will update trigger %s \n", v["name"])
-		}
-		fmt.Println()
+	}
+	list := []string{}
+	for _, v := range triggerToInstall {
+		list = append(list, v["name"].(string))
+	}
 
-		// Start syncing.
-		for _, v := range triggerToInstall {
-			if err := installTrigger(realm, v); err != nil {
-				fmt.Fprintf(os.Stderr, "Could not install trigger %s: %s\n", v["name"], err)
-			} else {
-				fmt.Printf("trigger %s installed successfully\n", v["name"])
-			}
+	list_existing := []string{}
+	for _, v := range triggerToUpdate {
+		list_existing = append(list_existing, v["name"].(string))
+	}
+
+	// Start syncing.
+	fmt.Printf("\n")
+	fmt.Printf("The following new triggers will be installed: %+q \n", list)
+
+	fmt.Printf("\n")
+	for _, v := range triggerToInstall {
+		if err := installTrigger(realm, v); err != nil {
+			fmt.Fprintf(os.Stderr, "Could not install trigger %s: %s\n", v["name"].(string), err)
+		} else {
+			fmt.Printf("trigger %s installed successfully\n", v["name"].(string))
 		}
+	}
+	fmt.Printf("\n")
+
+	y, err := command.Flags().GetBool("force")
+	if err != nil {
+		return err
+	}
+	if y {
+		fmt.Printf("The following triggers already exists and WILL be DELETED and RECREATED: %+q \n", list_existing)
+		fmt.Printf("\n")
+		if ok, err := utils.AskForConfirmation("Do you want to continue?"); !ok || err != nil {
+			fmt.Printf("aborting")
+			return nil
+		}
+
 		for _, v := range triggerToUpdate {
 			if err := updateTrigger(realm, v["name"].(string), v); err != nil {
-				fmt.Fprintf(os.Stderr, "Could not update trigger %s: %s\n", v["name"], err)
+				fmt.Fprintf(os.Stderr, "Could not update trigger %s: %s\n", v["name"].(string), err)
 			} else {
-				fmt.Printf("trigger %s updated successfully\n", v["name"])
+				fmt.Printf("trigger %s updated successfully\n", v["name"].(string))
 			}
 		}
+		fmt.Printf("\n")
+		fmt.Printf("\n")
+	} else {
+		// Start syncing.
+		fmt.Printf("The following triggers already exists and WILL NOT be updated: %+q \n", list_existing)
+		fmt.Printf("\n")
 
 	}
+
 	return nil
 }
 
