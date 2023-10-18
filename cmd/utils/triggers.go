@@ -52,6 +52,7 @@ func init() {
 func validateTriggerF(command *cobra.Command, args []string) error {
 	triggerPath := args[0]
 
+	
 	if _, err := triggers.ParseTriggerFrom(triggerPath); err != nil {
 		fmt.Fprintf(os.Stderr, "%s is not a valid Astarte Trigger: %s\n", triggerPath, err)
 		os.Exit(1)
