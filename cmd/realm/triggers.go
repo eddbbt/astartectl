@@ -17,12 +17,12 @@ package realm
 import (
 	"encoding/json"
 	"fmt"
-	"os"
-	"path/filepath"
-
+	"github.com/astarte-platform/astarte-go/triggers"
 	"github.com/astarte-platform/astartectl/utils"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"os"
+	"path/filepath"
 )
 
 // triggersCmd represents the triggers command
@@ -228,9 +228,15 @@ func triggersSyncF(command *cobra.Command, args []string) error {
 
 	triggerToInstall := []map[string]interface{}{}
 	triggerToUpdate := []map[string]interface{}{}
+	invalidtrigger := []string{}
 
 	for _, f := range args {
 		triggerFile, err := os.ReadFile(f)
+
+		if !validateTrigger(f) {
+			invalidtrigger = append(invalidtrigger, f)
+			continue
+		}
 		if err != nil {
 			return err
 		}
@@ -267,7 +273,10 @@ func triggersSyncF(command *cobra.Command, args []string) error {
 		list_existing = append(list_existing, v["name"].(string))
 	}
 
-	// Start syncing.
+	fmt.Printf("\n")
+	fmt.Printf("The following triggers are invalid and thus will not be processed: %+q \n", invalidtrigger)
+	fmt.Printf("\n")
+	fmt.Printf("in order to procede even with the invalid ones, rerun with --force-invalid flag")
 
 	//install new triggers
 	if len(triggerToInstall) > 0 {
@@ -320,7 +329,6 @@ func triggersSyncF(command *cobra.Command, args []string) error {
 
 		} else {
 
-			// Start syncing.
 			fmt.Printf("The following triggers already exists and WILL NOT be updated: %+q \n", list_existing)
 			fmt.Printf("\n")
 
@@ -407,8 +415,8 @@ func getTriggerDefinition(realm, triggerName string) (map[string]interface{}, er
 		return nil, err
 	}
 
-	// When we're here in the context of `interfaces sync`, the to-curl flag
-	// is always false (`interfaces sync` has no `--to-curl` flag)
+	// When we're here in the context of `trigger sync`, the to-curl flag
+	// is always false (`trigger sync` has no `--to-curl` flag)
 	// and thus the call will never exit unexpectedly
 	utils.MaybeCurlAndExit(getTriggerCall, astarteAPIClient)
 
@@ -422,4 +430,13 @@ func getTriggerDefinition(realm, triggerName string) (map[string]interface{}, er
 	}
 	triggerDefinition, _ := rawTRigger.(map[string]interface{})
 	return triggerDefinition, nil
+}
+
+func validateTrigger(path string) bool {
+
+	if _, err := triggers.ParseTriggerFrom(path); err != nil {
+		return false
+	} else {
+		return true
+	}
 }
