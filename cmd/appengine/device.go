@@ -1187,7 +1187,6 @@ func devicesSendDataF(command *cobra.Command, args []string) error {
 		os.Exit(1)
 	}
 	_, _ = sendDataRes.Parse()
-
 	// Done
 	fmt.Println("ok")
 	return nil
@@ -1346,10 +1345,18 @@ func parseSendDataPayload(payload string, mappingType interfaces.AstarteMappingT
 		}
 	case interfaces.BinaryBlobArray, interfaces.BooleanArray, interfaces.DateTimeArray, interfaces.DoubleArray,
 		interfaces.IntegerArray, interfaces.LongIntegerArray, interfaces.StringArray:
-		var jsonOut []interface{}
-		if err := json.Unmarshal([]byte(payload), &jsonOut); err != nil {
-			return nil, err
+
+		//wait it's all string?
+		payload = strings.Replace(payload, "[", "", -1)
+		payload = strings.Replace(payload, "]", "", -1)
+		payload_parsed := strings.Split(payload, ",")
+		//always has been
+
+		jsonOut := make([]interface{}, len(payload_parsed))
+		for i, v := range payload_parsed {
+			jsonOut[i] = v
 		}
+
 		retArray := []interface{}{}
 		// Do a smarter conversion here.
 		for _, v := range jsonOut {
