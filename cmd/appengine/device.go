@@ -1603,6 +1603,7 @@ func parseSendDataPayload(payload string, mappingType interfaces.AstarteMappingT
 	// Default to string, as it will be ok for most cases
 	var ret interface{} = payload
 	var err error
+
 	switch mappingType {
 	case interfaces.Double:
 		if ret, err = strconv.ParseFloat(payload, 64); err != nil {
@@ -1634,32 +1635,42 @@ func parseSendDataPayload(payload string, mappingType interfaces.AstarteMappingT
 	case interfaces.BinaryBlobArray, interfaces.BooleanArray, interfaces.DateTimeArray, interfaces.DoubleArray,
 		interfaces.IntegerArray, interfaces.LongIntegerArray, interfaces.StringArray:
 
-		//wait it's all string?
-		payload = strings.Replace(payload, "[", "", -1)
-		payload = strings.Replace(payload, "]", "", -1)
-		payload_parsed := strings.Split(payload, ",")
-		//always has been
+		//check if payload is an empty array, bypass conversions and just return an empty array
+		// if it is not, proceed as usual
+		if payload == "[]" {
+			ret = make([]interface{}, 0)
 
-		jsonOut := make([]interface{}, len(payload_parsed))
-		for i, v := range payload_parsed {
-			jsonOut[i] = v
-		}
+		} else {
 
-		retArray := []interface{}{}
-		// Do a smarter conversion here.
-		for _, v := range jsonOut {
-			switch val := v.(type) {
-			case string:
-				p, err := parseSendDataPayload(strings.TrimSpace(val), interfaces.AstarteMappingType(strings.TrimSuffix(string(mappingType), "array")))
-				if err != nil {
-					return nil, err
-				}
-				retArray = append(retArray, p)
-			default:
-				retArray = append(retArray, val)
+			//wait it's all string?
+			payload = strings.Replace(payload, "[", "", -1)
+			payload = strings.Replace(payload, "]", "", -1)
+			payload_parsed := strings.Split(payload, ",")
+			//always has been
+
+			jsonOut := make([]interface{}, len(payload_parsed))
+			for i, v := range payload_parsed {
+				jsonOut[i] = v
 			}
+
+			retArray := []interface{}{}
+
+			// Do a smarter conversion here.
+			for _, v := range jsonOut {
+				switch val := v.(type) {
+				case string:
+					p, err := parseSendDataPayload(strings.TrimSpace(val), interfaces.AstarteMappingType(strings.TrimSuffix(string(mappingType), "array")))
+					if err != nil {
+						return nil, err
+					}
+					retArray = append(retArray, p)
+				default:
+					retArray = append(retArray, val)
+				}
+			}
+			ret = retArray
 		}
-		ret = retArray
+
 	}
 
 	return ret, nil
