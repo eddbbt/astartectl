@@ -123,6 +123,7 @@ Should be Housekeeping key to generate an housekeeping token, Realm key for ever
 	genJwtCmd.Flags().StringSliceP("claims", "c", nil, `The list of claims to be added in the JWT. Defaults to all-access claims.
 You can specify the flag multiple times or separate the claims with a comma.`)
 	genJwtCmd.Flags().Int64P("expiry", "e", 28800, "Expiration time of the token in seconds. Defaults to 8h. 0 means the token will never expire.")
+	genJwtCmd.Flags().StringP("user-id", "U", "", `SECOID user id to auth, default to blank`)
 
 	UtilsCmd.AddCommand(genKeypairCmd)
 	UtilsCmd.AddCommand(genJwtCmd)
@@ -228,6 +229,11 @@ func genJwtF(command *cobra.Command, args []string) error {
 		return err
 	}
 
+	user_id, err := command.Flags().GetString("user-id")
+	if err != nil {
+		return err
+	}
+
 	if privateKey == "" {
 		// In this case, retrieve the key from the context
 		c, err := config.LoadBaseConfiguration(config.GetConfigDir())
@@ -264,12 +270,12 @@ func genJwtF(command *cobra.Command, args []string) error {
 			os.Exit(1)
 		}
 
-		tokenString, err = auth.GenerateAstarteJWTFromPEMKey(decoded, servicesAndClaims, expiryOffset)
+		tokenString, err = auth.GenerateAstarteJWTFromPEMKey(decoded, servicesAndClaims, expiryOffset, user_id)
 		if err != nil {
 			return err
 		}
 	} else {
-		tokenString, err = auth.GenerateAstarteJWTFromKeyFile(privateKey, servicesAndClaims, expiryOffset)
+		tokenString, err = auth.GenerateAstarteJWTFromKeyFile(privateKey, servicesAndClaims, expiryOffset, user_id)
 		if err != nil {
 			return err
 		}
