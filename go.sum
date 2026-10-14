@@ -117,8 +117,8 @@ github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZm
 github.com/dgryski/go-sip13 v0.0.0-20181026042036-e10d5fee7954/go.mod h1:vAd38F8PWV+bWy6jNmig1y/TA+kYO4g3RSRF0IAv0no=
 github.com/docopt/docopt-go v0.0.0-20180111231733-ee0de3bc6815/go.mod h1:WwZ+bS3ebgob9U8Nd0kOddGdZWjyMGR8Wziv+TBNwSE=
 github.com/dustin/go-humanize v1.0.0/go.mod h1:HtrtbFcZ19U5GC7JDqmcUSB87Iq5E25KnS6fMYU6eOk=
-github.com/eddbbt/astarte-go-fork v0.0.0-20260721090000-8d774f7002c9 h1:pNPf5QyWU3V51Unm1+81U8iyv/pB/82kEoxk5QFbeic=
-github.com/eddbbt/astarte-go-fork v0.0.0-20260721090000-8d774f7002c9/go.mod h1:kTZwlwegfcDgKuA3bsA2bHLLQ3gSQJa/9cq+WEoIGs8=
+github.com/eddbbt/astarte-go-fork v0.0.0-20261014145615-eb8e528969af h1:H8OIIvKe6G9ovgvWUpNOUaBYFNEjQU7l9pelLg8cwvY=
+github.com/eddbbt/astarte-go-fork v0.0.0-20261014145615-eb8e528969af/go.mod h1:kTZwlwegfcDgKuA3bsA2bHLLQ3gSQJa/9cq+WEoIGs8=
 github.com/elazarl/goproxy v0.0.0-20180725130230-947c36da3153/go.mod h1:/Zj4wYkgs4iZTTu3o/KG3Itv/qCCa8VVMlb3i9OVuzc=
 github.com/emicklei/go-restful v0.0.0-20170410110728-ff4f55a20633/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=
 github.com/emicklei/go-restful v2.9.5+incompatible/go.mod h1:otzb+WCGbkyDHkqmQmT5YD2WR4BBwUdeQoFo8l/7tVs=

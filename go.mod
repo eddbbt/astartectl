@@ -80,4 +80,4 @@ require (
 	sigs.k8s.io/structured-merge-diff/v6 v6.3.0 // indirect
 )
 
-replace github.com/astarte-platform/astarte-go => github.com/eddbbt/astarte-go-fork v0.0.0-20260721090000-8d774f7002c9
+replace github.com/astarte-platform/astarte-go => github.com/eddbbt/astarte-go-fork v0.0.0-20261014145615-eb8e528969af
